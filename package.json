@@ -1,0 +1,23 @@
+{
+  "name": "sample-sam-app",
+  "version": "1.0.0",
+  "description": "sam aws sam web service with lambda and api gateway",
+  "main": "src/index.js",
+  "scripts": {
+	"package": "npm install --production && mkdir output && zip -r output/deployment_package.zip node_modules src"
+  },
+  "keywords": [
+    "sam",
+    "aws",
+    "web",
+    "service",
+    "api",
+    "gateway",
+    "lambda"
+  ],
+  "dependencies": {
+	"@aws-sdk/client-dynamodb": "3.549.0"
+  },
+  "author": "Patrick D. Killourhy",
+  "license": "SEE LICENSE IN license.txt"
+}

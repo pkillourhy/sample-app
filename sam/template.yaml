@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: sample-sam-app
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  ServiceApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub ${AWS::StackName}-api
+      StageName: stage
+      MethodSettings:
+        - ResourcePath: /*
+          HttpMethod: '*'
+          MetricsEnabled: true
+          DataTraceEnabled: false
+          LoggingLevel: INFO
+
+  ServiceLambda:
+    DependsOn:
+      - UserTable
+      - LambdaRole
+    Type: AWS::Serverless::Function
+    Properties:
+      AutoPublishAlias: deployed
+      CodeUri: ../output/deployment_package.zip
+      Handler: index.handler
+      Role: !GetAtt LambdaRole.Arn
+      Events:
+        SampleEndpoint:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ServiceApi
+            Path: /v1/sample_endpoint
+            Method: get
+            Auth:
+              ApiKeyRequired: true
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: 'Allow'
+              Action:
+                - 'lambda:InvokeFunction'
+              Resource: '*'
+      Runtime: nodejs18.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    DependsOn: UserTable
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
+        - arn:aws:iam::aws:policy/AmazonAPIGatewayPushToCloudWatchLogs
+
+  UserTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: userId
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
